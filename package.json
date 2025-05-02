@@ -1,0 +1,82 @@
+{
+  "name": "scroller-power",
+  "displayName": "scroller-power",
+  "description": "",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.99.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "scrollerPower.halfPageDown",
+        "title": "Scroll Half Page Down"
+      },
+      {
+        "command": "scrollerPower.halfPageUp",
+        "title": "Scroll Half Page Up"
+      },
+      {
+        "command": "scrollerPower.pageDown",
+        "title": "Scroll Page Down"
+      },
+      {
+        "command": "scrollerPower.pageUp",
+        "title": "Scroll Page Up"
+      }
+    ],
+    "configuration": {
+      "type": "object",
+      "title": "Scroller Power Configuration",
+      "properties": {
+        "scrollerPower.linesToScrollHalfPage": {
+          "type": "number",
+          "default": 25,
+          "description": "Lines to scroll for half page command"
+        },
+        "scrollerPower.linesToScrollFullPage": {
+          "type": "number",
+          "default": 50,
+          "description": "Lines to scroll for full page command"
+        },
+        "scrollerPower.totalDelay": {
+          "type": "number",
+          "default": 30,
+          "minimum": 10,
+          "maximum": 100
+        },
+        "scrollerPower.linesPerTick": {
+          "type": "number",
+          "default": 3,
+          "minimum": 1,
+          "maximum": 5,
+          "description": "Lines to skip per tick. Lower number makes a smoother scroll, higher number gives a faster scroll, but less smooth"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.99.0",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "20.x",
+    "@typescript-eslint/eslint-plugin": "^8.31.1",
+    "@typescript-eslint/parser": "^8.31.1",
+    "eslint": "^9.25.1",
+    "typescript": "^5.8.3",
+    "@vscode/test-cli": "^0.0.10",
+    "@vscode/test-electron": "^2.5.2"
+  }
+}
