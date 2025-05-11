@@ -28,6 +28,14 @@
       {
         "command": "scrollerPower.pageUp",
         "title": "Scroll Page Up"
+      },
+      {
+        "command": "scrollerPower.keyScrollDown",
+        "title": "Scroll Key Down"
+      },
+      {
+        "command": "scrollerPower.keyScrollUp",
+        "title": "Scroll Key Up"
       }
     ],
     "configuration": {
