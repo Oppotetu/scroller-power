@@ -6,31 +6,12 @@ function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-console.log("outside activate");
-
-// let hasSelection = false;
-
-// function detectSelection(editor: vscode.TextEditor) {
-//   if (!editor) return;
-//   const selected = editor.selections.some((selection) => !selection.isEmpty);
-//   if (selected) {
-//     console.log("has selection!");
-//     hasSelection = true;
-//   } else {
-//     console.log("doesnt have selectoin!");
-//     hasSelection = false;
-//   }
-// }
-
 export function activate(context: vscode.ExtensionContext) {
   const config = vscode.workspace.getConfiguration("scrollerPower");
 
-  console.log("inside activate");
-
-  const linesToScrollHalfPage: number =
-    config.get("linesToScrollHalfPage") || 25;
-  const linesToScrollFullPage: number =
-    config.get("linesToScrollFullPage") || 50;
+  const linesToScrollQuarter: number = config.get("linesToScrollQuarter") || 5;
+  const linesToScrollHalfPage: number = config.get("linesToScrollHalf") || 25;
+  const linesToScrollFullPage: number = config.get("linesToScrollFull") || 50;
 
   const totalDelay: number = config.get("totalDelay") || 30;
   const linesPerTick: number = config.get("linesPerTick") || 1;
@@ -39,28 +20,57 @@ export function activate(context: vscode.ExtensionContext) {
   const smoothScroll = async (direction: Direction, lines: number) => {
     const editor = vscode.window.activeTextEditor;
     if (!editor) return;
+    const delayPerTick = Math.max(
+      minimumDelay,
+      totalDelay / (lines / linesPerTick)
+    );
+
     const hasSelection = editor.selections.some(
       (selection) => !selection.isEmpty
     );
-    console.log("selection start of function: ", hasSelection);
+
     if (hasSelection) {
-      const selection = editor.selection;
-      const newStart = new vscode.Position(
-        selection.start.line,
-        selection.start.character
-      );
-      const newEnd = new vscode.Position(
-        direction === "down"
-          ? selection.end.line + lines
-          : selection.end.line - lines,
-        selection.end.character
-      );
-      editor.selection = new vscode.Selection(newStart, newEnd);
+      const document = editor.document;
+      const anchor = editor.selection.anchor;
+
+      const activeLineText = document.lineAt(editor.selection.active.line).text;
+      const isVisualLineMode =
+        anchor.character === 0 &&
+        editor.selection.active.character === activeLineText.length;
+
+      for (let scrolled = 0; scrolled < lines; scrolled += linesPerTick) {
+        const selection = editor.selection;
+        const active = selection.active;
+
+        const newActiveLine =
+          direction === "down"
+            ? active.line + linesPerTick
+            : active.line - linesPerTick;
+
+        const clampedLine = Math.max(
+          0,
+          Math.min(newActiveLine, document.lineCount - 1)
+        );
+
+        let newActive;
+        if (isVisualLineMode) {
+          // In visual line mode, move active to end of the line
+          const lineLength = document.lineAt(clampedLine).text.length;
+          newActive = new vscode.Position(clampedLine, lineLength);
+        } else {
+          // In normal visual mode, preserve character position
+          newActive = new vscode.Position(clampedLine, active.character);
+        }
+
+        editor.selection = new vscode.Selection(anchor, newActive);
+        await vscode.commands.executeCommand("editorScroll", {
+          to: direction,
+          by: "line",
+          value: linesPerTick,
+          revealCursor: true,
+        });
+      }
     } else {
-      const delayPerTick = Math.max(
-        minimumDelay,
-        totalDelay / (lines / linesPerTick)
-      );
       for (let scrolled = 0; scrolled < lines; scrolled += linesPerTick) {
         await vscode.commands.executeCommand("editorScroll", {
           to: direction,
@@ -80,197 +90,50 @@ export function activate(context: vscode.ExtensionContext) {
     const cursorPosition = editor.selection.active;
     const range = new vscode.Range(cursorPosition, cursorPosition);
     editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
-    // editor.revealRange(editor.selection, vscode.TextEditorRevealType.InCenter);
   };
 
-  function handleVisualScroll(editor: vscode.TextEditor, lines: number) {
-    console.log("in visual mode");
-    // Handle visual mode scrolling
-    const selection = editor.selection;
-    // Update both selection and cursor
-    const newStart = new vscode.Position(
-      selection.start.line + lines,
-      selection.start.character
-    );
-    const newEnd = new vscode.Position(
-      selection.end.line + lines,
-      selection.end.character
-    );
-    editor.selection = new vscode.Selection(newStart, newEnd);
-    editor.revealRange(
-      new vscode.Range(newStart, newEnd),
-      vscode.TextEditorRevealType.Default
-    );
-  }
-
-  function scrollKeyScroll(lines: number) {
-    if (!vscode.window.activeTextEditor) {
-      return;
+  const quarterDown = vscode.commands.registerCommand(
+    "scrollerPower.quarterDown",
+    () => {
+      smoothScroll("down", linesToScrollQuarter);
     }
-    let currentPosition = vscode.window.activeTextEditor.selection.active;
-    let moveToLine = currentPosition.line + lines;
-    let documentLineCount = vscode.window.activeTextEditor.document.lineCount;
-    if (moveToLine > documentLineCount - 1) {
-      moveToLine = documentLineCount - 1;
+  );
+
+  const quarterUp = vscode.commands.registerCommand(
+    "scrollerPower.quarterUp",
+    () => {
+      smoothScroll("up", linesToScrollQuarter);
     }
-    if (moveToLine < 0) {
-      moveToLine = 0;
-    }
-    let moveToCharactor =
-      vscode.window.activeTextEditor.document.lineAt(
-        moveToLine
-      ).firstNonWhitespaceCharacterIndex;
-    let newPosition = new vscode.Position(moveToLine, moveToCharactor);
-    vscode.window.activeTextEditor.selection = new vscode.Selection(
-      newPosition,
-      newPosition
-    );
-    vscode.window.activeTextEditor.revealRange(
-      vscode.window.activeTextEditor.selection,
-      vscode.TextEditorRevealType.InCenter
-    );
-  }
+  );
 
-  // function handleScrollInVisualMode(scrollAmount: number) {
-  //   const editor = vscode.window.activeTextEditor;
-  //   if (!editor) {
-  //     return;
-  //   }
-  //   // Get current selection
-  //   const selection = editor.selection;
-  //   // Calculate new positions based on smoothScroll amount
-  //   const newStart = new vscode.Position(
-  //     selection.start.line + scrollAmount,
-  //     selection.start.character
-  //   );
-  //   const newEnd = new vscode.Position(
-  //     selection.end.line + scrollAmount,
-  //     selection.end.character
-  //   );
-  //   // Update both selection and cursor
-  //   editor.selection = new vscode.Selection(newStart, newEnd);
-  //   // Ensure the selection is visible
-  //   editor.revealRange(
-  //     new vscode.Range(newStart, newEnd),
-  //     vscode.TextEditorRevealType.Default
-  //   );
-  // }
-
-  // function visualHalfPageDown1fun() {
-  //   const editor = vscode.window.activeTextEditor;
-  //   if (!editor) return;
-  //   // Double-check visual mode state
-  //   const selection = editor.selection;
-  //   const inVisualMode = !selection.start.isEqual(selection.end);
-  //   if (inVisualMode) {
-  //     // Visual mode scrolling implementation
-  //     const scrollAmount =
-  //       Math.floor(
-  //         editor.visibleRanges[0].end.line - editor.visibleRanges[0].start.line
-  //       ) / 2;
-  //     const newStart = new vscode.Position(
-  //       selection.start.line + scrollAmount,
-  //       selection.start.character
-  //     );
-  //     const newEnd = new vscode.Position(
-  //       selection.end.line + scrollAmount,
-  //       selection.end.character
-  //     );
-  //     editor.selection = new vscode.Selection(newStart, newEnd);
-  //     editor.revealRange(
-  //       new vscode.Range(newStart, newEnd),
-  //       vscode.TextEditorRevealType.Default
-  //     );
-  //   } else {
-  //     console.log("in normal scrolling");
-  //     // Normal mode scrolling implementation
-  //     // Your existing scroll code here
-  //   }
-  // }
-
-  const scrollHalfDown = vscode.commands.registerCommand(
-    "scrollerPower.halfPageDown",
+  const halfDown = vscode.commands.registerCommand(
+    "scrollerPower.halfDown",
     () => {
       smoothScroll("down", linesToScrollHalfPage);
     }
   );
 
-  const scrollHalfUp = vscode.commands.registerCommand(
-    "scrollerPower.halfPageUp",
-    () => {
-      smoothScroll("up", linesToScrollHalfPage);
-    }
-  );
+  const halfUp = vscode.commands.registerCommand("scrollerPower.halfUp", () => {
+    smoothScroll("up", linesToScrollHalfPage);
+  });
 
-  const scrollDown = vscode.commands.registerCommand(
-    "scrollerPower.pageDown",
+  const fullDown = vscode.commands.registerCommand(
+    "scrollerPower.fullDown",
     () => {
       smoothScroll("down", linesToScrollFullPage);
     }
   );
 
-  const scrollUp = vscode.commands.registerCommand(
-    "scrollerPower.pageUp",
-    () => {
-      smoothScroll("up", linesToScrollFullPage);
-    }
-  );
+  const fullUp = vscode.commands.registerCommand("scrollerPower.fullUp", () => {
+    smoothScroll("up", linesToScrollFullPage);
+  });
 
-  const keyScrollDown = vscode.commands.registerCommand(
-    "scrollerPower.keyScrollDown",
-    () => {
-      scrollKeyScroll(-1 * linesToScrollHalfPage);
-    }
-  );
-
-  const keyScrollUp = vscode.commands.registerCommand(
-    "scrollerPower.keyScrollUp",
-    () => {
-      scrollKeyScroll(linesToScrollHalfPage);
-    }
-  );
-
-  // const visualHalfPageDown1 = vscode.commands.registerCommand(
-  //   "scrollerPower.visualHalfPageDown1",
-  //   () => {
-  //     visualHalfPageDown1fun();
-  //   }
-  // );
-
-  // const visualHalfPageDown2 = vscode.commands.registerCommand(
-  //   "scrollerPower.visualHalfPageDown2",
-  //   () => {
-  //     visualHalfPageDown2fun(linesToScrollHalfPage);
-  //   }
-  // );
-
-  // const visualHalfPageDown3 = vscode.commands.registerCommand(
-  //   "scrollerPower.visualHalfPageDown3",
-  //   () => {
-  //     handleScrollInVisualMode(linesToScrollHalfPage);
-  //   }
-  // );
-
-  // vscode.commands.registerCommand('extension.checkSelection', () => {
-  //     detectSelection();
-  //   });
-
-  // const selectionChangeListener = vscode.window.onDidChangeTextEditorSelection(
-  //   (event) => {
-  //     detectSelection(event.textEditor);
-  //   }
-  // );
-
-  // context.subscriptions.push(visualHalfPageDown1);
-  // context.subscriptions.push(visualHalfPageDown2);
-  // context.subscriptions.push(visualHalfPageDown3);
-  context.subscriptions.push(scrollHalfDown);
-  context.subscriptions.push(scrollHalfUp);
-  context.subscriptions.push(scrollDown);
-  context.subscriptions.push(scrollUp);
-  context.subscriptions.push(keyScrollDown);
-  context.subscriptions.push(keyScrollUp);
-  // context.subscriptions.push(selectionChangeListener);
+  context.subscriptions.push(quarterDown);
+  context.subscriptions.push(quarterUp);
+  context.subscriptions.push(halfDown);
+  context.subscriptions.push(halfUp);
+  context.subscriptions.push(fullDown);
+  context.subscriptions.push(fullUp);
 }
 
 export function deactivate() {}

@@ -9,54 +9,82 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [
-    "onStartupFinished"
-  ],
+  "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "scrollerPower.halfPageDown",
+        "command": "scrollerPower.quarterDown",
+        "title": "Scroll short jump down"
+      },
+      {
+        "command": "scrollerPower.quarterUp",
+        "title": "Scroll short jump up"
+      },
+      {
+        "command": "scrollerPower.halfDown",
         "title": "Scroll Half Page Down"
       },
       {
-        "command": "scrollerPower.halfPageUp",
+        "command": "scrollerPower.halfUp",
         "title": "Scroll Half Page Up"
       },
       {
-        "command": "scrollerPower.pageDown",
+        "command": "scrollerPower.fullDown",
         "title": "Scroll Page Down"
       },
       {
-        "command": "scrollerPower.pageUp",
+        "command": "scrollerPower.fullUp",
         "title": "Scroll Page Up"
-      },
-      {
-        "command": "scrollerPower.keyScrollDown",
-        "title": "Scroll Key Down"
-      },
-      {
-        "command": "scrollerPower.keyScrollUp",
-        "title": "Scroll Key Up"
       }
     ],
     "keybindings": [
       {
-        "command": "scrollerPower.visScrollDown",
-        "key": "ctrl+d",
-        "when": "vim.inVisualMode"
+        "command": "scrollerPower.quarterDown",
+        "key": "ctrl+right",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "scrollerPower.quarterUp",
+        "key": "ctrl+left",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "scrollerPower.halfDown",
+        "key": "ctrl+down",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "scrollerPower.halfUp",
+        "key": "ctrl+up",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "scrollerPower.fullDown",
+        "key": "alt+pageDown",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "scrollerPower.fullUp",
+        "key": "alt+pageUp",
+        "when": "editorTextFocus"
       }
     ],
     "configuration": {
       "type": "object",
       "title": "Scroller Power Configuration",
       "properties": {
-        "scrollerPower.linesToScrollHalfPage": {
+        "scrollerPower.linesToScrollQuarter": {
+          "type": "number",
+          "default": 5,
+          "description": "Lines to scroll for a small jump"
+        },
+        "scrollerPower.linesToScrollHalf": {
           "type": "number",
           "default": 25,
           "description": "Lines to scroll for half page command"
         },
-        "scrollerPower.linesToScrollFullPage": {
+        "scrollerPower.linesToScrollFull": {
           "type": "number",
           "default": 50,
           "description": "Lines to scroll for full page command"
