@@ -14,59 +14,59 @@
   "contributes": {
     "commands": [
       {
-        "command": "scrollerPower.quarterDown",
-        "title": "Scroll short jump down"
+        "command": "scrollerPower.smallDown",
+        "title": "Scroll down (small amount)"
       },
       {
-        "command": "scrollerPower.quarterUp",
-        "title": "Scroll short jump up"
+        "command": "scrollerPower.smallUp",
+        "title": "Scroll up (small amount)"
       },
       {
-        "command": "scrollerPower.halfDown",
-        "title": "Scroll Half Page Down"
+        "command": "scrollerPower.mediumDown",
+        "title": "Scroll down (medium amount)"
       },
       {
-        "command": "scrollerPower.halfUp",
-        "title": "Scroll Half Page Up"
+        "command": "scrollerPower.mediumUp",
+        "title": "Scroll up (medium amount)"
       },
       {
-        "command": "scrollerPower.fullDown",
-        "title": "Scroll Page Down"
+        "command": "scrollerPower.largeDown",
+        "title": "Scroll down (large amount)"
       },
       {
-        "command": "scrollerPower.fullUp",
-        "title": "Scroll Page Up"
+        "command": "scrollerPower.largeUp",
+        "title": "Scroll up (large amount)"
       }
     ],
     "keybindings": [
       {
-        "command": "scrollerPower.quarterDown",
+        "command": "scrollerPower.smallDown",
         "key": "ctrl+right",
         "when": "editorTextFocus"
       },
       {
-        "command": "scrollerPower.quarterUp",
+        "command": "scrollerPower.smallUp",
         "key": "ctrl+left",
         "when": "editorTextFocus"
       },
       {
-        "command": "scrollerPower.halfDown",
+        "command": "scrollerPower.mediumDown",
         "key": "ctrl+down",
         "when": "editorTextFocus"
       },
       {
-        "command": "scrollerPower.halfUp",
+        "command": "scrollerPower.mediumUp",
         "key": "ctrl+up",
         "when": "editorTextFocus"
       },
       {
-        "command": "scrollerPower.fullDown",
-        "key": "alt+pageDown",
+        "command": "scrollerPower.largeDown",
+        "key": "ctrl+pageDown",
         "when": "editorTextFocus"
       },
       {
-        "command": "scrollerPower.fullUp",
-        "key": "alt+pageUp",
+        "command": "scrollerPower.largeUp",
+        "key": "ctrl+pageUp",
         "when": "editorTextFocus"
       }
     ],
@@ -74,33 +74,26 @@
       "type": "object",
       "title": "Scroller Power Configuration",
       "properties": {
-        "scrollerPower.linesToScrollQuarter": {
+        "scrollerPower.linesToScrollSmall": {
           "type": "number",
           "default": 5,
-          "description": "Lines to scroll for a small jump"
+          "minimum": 1,
+          "maximum": 20,
+          "description": "Lines to scroll (small amount)"
         },
-        "scrollerPower.linesToScrollHalf": {
+        "scrollerPower.linesToScrollMedium": {
           "type": "number",
           "default": 25,
-          "description": "Lines to scroll for half page command"
+          "minimum": 20,
+          "maximum": 40,
+          "description": "Lines to scroll (medium amount)"
         },
-        "scrollerPower.linesToScrollFull": {
+        "scrollerPower.linesToScrollLarge": {
           "type": "number",
           "default": 50,
-          "description": "Lines to scroll for full page command"
-        },
-        "scrollerPower.totalDelay": {
-          "type": "number",
-          "default": 30,
-          "minimum": 10,
-          "maximum": 100
-        },
-        "scrollerPower.linesPerTick": {
-          "type": "number",
-          "default": 3,
-          "minimum": 1,
-          "maximum": 5,
-          "description": "Lines to skip per tick. Lower number makes a smoother scroll, higher number gives a faster scroll, but less smooth"
+          "minimum": 40,
+          "maximum": 75,
+          "description": "Lines to scroll (large amount)"
         }
       }
     }

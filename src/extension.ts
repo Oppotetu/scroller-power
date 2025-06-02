@@ -2,6 +2,14 @@ import * as vscode from "vscode";
 
 type Direction = "up" | "down";
 
+// const totalDelay: number = config.get("totalDelay") || 30;
+// const minimumDelay: number = 1;
+const linesPerTick = 1;
+
+const delaySmall = 1;
+const delayMedium = 1;
+const delayLarge = 1;
+
 function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -9,21 +17,21 @@ function delay(ms: number) {
 export function activate(context: vscode.ExtensionContext) {
   const config = vscode.workspace.getConfiguration("scrollerPower");
 
-  const linesToScrollQuarter: number = config.get("linesToScrollQuarter") || 5;
-  const linesToScrollHalfPage: number = config.get("linesToScrollHalf") || 25;
-  const linesToScrollFullPage: number = config.get("linesToScrollFull") || 50;
+  const linesToScrollSmall: number = config.get("linesToScrollSmall") || 5;
+  const linesToScrollMedium: number = config.get("linesToScrollMedium") || 25;
+  const linesToScrollLarge: number = config.get("linesToScrollLarge") || 50;
 
-  const totalDelay: number = config.get("totalDelay") || 30;
-  const linesPerTick: number = config.get("linesPerTick") || 1;
-  const minimumDelay: number = 1;
-
-  const smoothScroll = async (direction: Direction, lines: number) => {
+  const smoothScroll = async (
+    direction: Direction,
+    lines: number,
+    delayPerTick: number
+  ) => {
     const editor = vscode.window.activeTextEditor;
     if (!editor) return;
-    const delayPerTick = Math.max(
-      minimumDelay,
-      totalDelay / (lines / linesPerTick)
-    );
+    // const delayPerTick = Math.max(
+    //   minimumDelay,
+    //   totalDelay / (lines / linesPerTick)
+    // );
 
     const hasSelection = editor.selections.some(
       (selection) => !selection.isEmpty
@@ -69,6 +77,7 @@ export function activate(context: vscode.ExtensionContext) {
           value: linesPerTick,
           revealCursor: true,
         });
+        // await delay(delayPerTick);
       }
     } else {
       for (let scrolled = 0; scrolled < lines; scrolled += linesPerTick) {
@@ -83,7 +92,7 @@ export function activate(context: vscode.ExtensionContext) {
           by: "line",
           value: linesPerTick,
         });
-        await delay(delayPerTick);
+        // await delay(delayPerTick);
       }
     }
 
@@ -92,48 +101,54 @@ export function activate(context: vscode.ExtensionContext) {
     editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
   };
 
-  const quarterDown = vscode.commands.registerCommand(
-    "scrollerPower.quarterDown",
+  const smallDown = vscode.commands.registerCommand(
+    "scrollerPower.smallDown",
     () => {
-      smoothScroll("down", linesToScrollQuarter);
+      smoothScroll("down", linesToScrollSmall, delaySmall);
     }
   );
 
-  const quarterUp = vscode.commands.registerCommand(
-    "scrollerPower.quarterUp",
+  const smallUp = vscode.commands.registerCommand(
+    "scrollerPower.smallUp",
     () => {
-      smoothScroll("up", linesToScrollQuarter);
+      smoothScroll("up", linesToScrollSmall, delaySmall);
     }
   );
 
-  const halfDown = vscode.commands.registerCommand(
-    "scrollerPower.halfDown",
+  const mediumDown = vscode.commands.registerCommand(
+    "scrollerPower.mediumDown",
     () => {
-      smoothScroll("down", linesToScrollHalfPage);
+      smoothScroll("down", linesToScrollMedium, delayMedium);
     }
   );
 
-  const halfUp = vscode.commands.registerCommand("scrollerPower.halfUp", () => {
-    smoothScroll("up", linesToScrollHalfPage);
-  });
-
-  const fullDown = vscode.commands.registerCommand(
-    "scrollerPower.fullDown",
+  const mediumUp = vscode.commands.registerCommand(
+    "scrollerPower.mediumUp",
     () => {
-      smoothScroll("down", linesToScrollFullPage);
+      smoothScroll("up", linesToScrollMedium, delayMedium);
     }
   );
 
-  const fullUp = vscode.commands.registerCommand("scrollerPower.fullUp", () => {
-    smoothScroll("up", linesToScrollFullPage);
-  });
+  const largeDown = vscode.commands.registerCommand(
+    "scrollerPower.largeDown",
+    () => {
+      smoothScroll("down", linesToScrollLarge, delayLarge);
+    }
+  );
 
-  context.subscriptions.push(quarterDown);
-  context.subscriptions.push(quarterUp);
-  context.subscriptions.push(halfDown);
-  context.subscriptions.push(halfUp);
-  context.subscriptions.push(fullDown);
-  context.subscriptions.push(fullUp);
+  const largeUp = vscode.commands.registerCommand(
+    "scrollerPower.largeUp",
+    () => {
+      smoothScroll("up", linesToScrollLarge, delayLarge);
+    }
+  );
+
+  context.subscriptions.push(smallDown);
+  context.subscriptions.push(smallUp);
+  context.subscriptions.push(mediumDown);
+  context.subscriptions.push(mediumUp);
+  context.subscriptions.push(largeDown);
+  context.subscriptions.push(largeUp);
 }
 
 export function deactivate() {}

@@ -1,71 +1,59 @@
-# smooth-vim-scroll README
+# Scroller Power
 
-This is the README for your extension "smooth-vim-scroll". After writing up a brief description, we recommend including the following sections.
+A powerful VS Code extension that enhances your scrolling experience with customizable keybindings and smooth scrolling behavior. This extension provides different scroll amounts for different keys, making navigation through your code more efficient and comfortable.
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+- **Customizable Scroll Amounts**: Three different scroll distances (small, medium, and large jumps)
+- **Smooth Scrolling**: Enhanced scrolling experience with configurable animation speed and smoothness
+- **Keyboard-centric Navigation**: Optimize your workflow with keyboard-driven scrolling
 
-For example if there is an image subfolder under your extension project workspace:
+## Keybindings
 
-\!\[feature X\]\(images/feature-x.png\)
+The extension provides the following default keybindings:
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
-
-## Requirements
-
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+- `ctrl+right`: Scroll small jump down
+- `ctrl+left`: Scroll small jump up
+- `ctrl+down`: Scroll medium jump down
+- `ctrl+up`: Scroll medium jump up
+- `alt+pageDown`: Scroll large jump down
+- `alt+pageUp`: Scroll large jump up
 
 ## Extension Settings
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
-
-For example:
-
 This extension contributes the following settings:
 
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+* `scrollerPower.linesToScrollSmall`: Number of lines to scroll for small jump (default: 5)
+* `scrollerPower.linesToScrollMedium`: Number of lines to scroll for medium jump (default: 25)
+* `scrollerPower.linesToScrollLarge`: Number of lines to scroll for large jump (default: 50)
+* `scrollerPower.totalDelay`: Total animation duration in milliseconds (default: 30, min: 10, max: 100)
+* `scrollerPower.linesPerTick`: Lines to skip per animation tick (default: 3, min: 1, max: 5)
+  - Lower numbers make scrolling smoother but slower
+  - Higher numbers make scrolling faster but less smooth
+
+## Requirements
+
+- Visual Studio Code 1.99.0 or higher
 
 ## Known Issues
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+- None at the moment
 
 ## Release Notes
 
-Users appreciate release notes as you update your extension.
+### 0.0.1
 
-### 1.0.0
+Initial release of Scroller Power with the following features:
+- Three different scroll distances (small, medium, and large jumps)
+- Smooth scrolling with configurable animation speed and smoothness
+- Keyboard-centric navigation with intuitive keybindings
 
-Initial release of ...
+## Contributing
 
-### 1.0.1
+Feel free to open issues or submit pull requests on our [GitHub repository](https://github.com/yourusername/scroller-power).
 
-Fixed issue #.
+## License
 
-### 1.1.0
+This extension is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-Added features X, Y, and Z.
-
----
-
-## Following extension guidelines
-
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
-
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+**Enjoy enhanced scrolling in VS Code!**
