@@ -2,8 +2,6 @@ import * as vscode from "vscode";
 
 type Direction = "up" | "down";
 
-// const totalDelay: number = config.get("totalDelay") || 30;
-// const minimumDelay: number = 1;
 const linesPerTick = 1;
 
 const delaySmall = 1;
@@ -20,6 +18,8 @@ export function activate(context: vscode.ExtensionContext) {
   const linesToScrollSmall: number = config.get("linesToScrollSmall") || 5;
   const linesToScrollMedium: number = config.get("linesToScrollMedium") || 25;
   const linesToScrollLarge: number = config.get("linesToScrollLarge") || 50;
+  const disableSmooth: boolean = config.get("disableSmooth") || false;
+  const disableCentering: boolean = config.get("disableCentering") || false;
 
   const smoothScroll = async (
     direction: Direction,
@@ -28,10 +28,6 @@ export function activate(context: vscode.ExtensionContext) {
   ) => {
     const editor = vscode.window.activeTextEditor;
     if (!editor) return;
-    // const delayPerTick = Math.max(
-    //   minimumDelay,
-    //   totalDelay / (lines / linesPerTick)
-    // );
 
     const hasSelection = editor.selections.some(
       (selection) => !selection.isEmpty
@@ -77,7 +73,7 @@ export function activate(context: vscode.ExtensionContext) {
           value: linesPerTick,
           revealCursor: true,
         });
-        // await delay(delayPerTick);
+        await delay(delayPerTick);
       }
     } else {
       for (let scrolled = 0; scrolled < lines; scrolled += linesPerTick) {
@@ -92,54 +88,117 @@ export function activate(context: vscode.ExtensionContext) {
           by: "line",
           value: linesPerTick,
         });
-        // await delay(delayPerTick);
+        await delay(delayPerTick);
       }
     }
 
-    const cursorPosition = editor.selection.active;
-    const range = new vscode.Range(cursorPosition, cursorPosition);
-    editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
+    if (!disableCentering) {
+      const cursorPosition = editor.selection.active;
+      const range = new vscode.Range(cursorPosition, cursorPosition);
+      editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
+    }
+  };
+
+  const notSmoothScroll = async (direction: Direction, lines: number) => {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) return;
+
+    const hasSelection = editor.selections.some(
+      (selection) => !selection.isEmpty
+    );
+
+    if (hasSelection) {
+      const document = editor.document;
+      const anchor = editor.selection.anchor;
+      const active = editor.selection.active;
+
+      const activeLineText = document.lineAt(active.line).text;
+      const isVisualLineMode =
+        anchor.character === 0 && active.character === activeLineText.length;
+
+      const newActiveLine =
+        direction === "down" ? active.line + lines : active.line - lines;
+
+      const clampedLine = Math.max(
+        0,
+        Math.min(newActiveLine, document.lineCount - 1)
+      );
+
+      let newActive;
+      if (isVisualLineMode) {
+        const lineLength = document.lineAt(clampedLine).text.length;
+        newActive = new vscode.Position(clampedLine, lineLength);
+      } else {
+        newActive = new vscode.Position(clampedLine, active.character);
+      }
+
+      editor.selection = new vscode.Selection(anchor, newActive);
+    } else {
+      await vscode.commands.executeCommand("cursorMove", {
+        to: direction,
+        by: "line",
+        value: lines,
+      });
+    }
+
+    if (!disableCentering) {
+      const cursorPosition = editor.selection.active;
+      const range = new vscode.Range(cursorPosition, cursorPosition);
+      editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
+    }
   };
 
   const smallDown = vscode.commands.registerCommand(
     "scrollerPower.smallDown",
     () => {
-      smoothScroll("down", linesToScrollSmall, delaySmall);
+      disableSmooth
+        ? notSmoothScroll("down", linesToScrollSmall)
+        : smoothScroll("down", linesToScrollSmall, delaySmall);
     }
   );
 
   const smallUp = vscode.commands.registerCommand(
     "scrollerPower.smallUp",
     () => {
-      smoothScroll("up", linesToScrollSmall, delaySmall);
+      disableSmooth
+        ? notSmoothScroll("up", linesToScrollSmall)
+        : smoothScroll("up", linesToScrollSmall, delaySmall);
     }
   );
 
   const mediumDown = vscode.commands.registerCommand(
     "scrollerPower.mediumDown",
     () => {
-      smoothScroll("down", linesToScrollMedium, delayMedium);
+      disableSmooth
+        ? notSmoothScroll("down", linesToScrollMedium)
+        : smoothScroll("down", linesToScrollMedium, delayMedium);
     }
   );
 
   const mediumUp = vscode.commands.registerCommand(
     "scrollerPower.mediumUp",
     () => {
-      smoothScroll("up", linesToScrollMedium, delayMedium);
+      disableSmooth
+        ? notSmoothScroll("up", linesToScrollMedium)
+        : smoothScroll("up", linesToScrollMedium, delayMedium);
     }
   );
 
   const largeDown = vscode.commands.registerCommand(
     "scrollerPower.largeDown",
     () => {
-      smoothScroll("down", linesToScrollLarge, delayLarge);
+      disableSmooth
+        ? notSmoothScroll("down", linesToScrollLarge)
+        : smoothScroll("down", linesToScrollLarge, delayLarge);
     }
   );
 
   const largeUp = vscode.commands.registerCommand(
     "scrollerPower.largeUp",
     () => {
-      smoothScroll("up", linesToScrollLarge, delayLarge);
+      disableSmooth
+        ? notSmoothScroll("up", linesToScrollLarge)
+        : smoothScroll("up", linesToScrollLarge, delayLarge);
     }
   );
 

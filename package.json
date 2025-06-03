@@ -41,22 +41,22 @@
     "keybindings": [
       {
         "command": "scrollerPower.smallDown",
-        "key": "ctrl+right",
+        "key": "ctrl+e",
         "when": "editorTextFocus"
       },
       {
         "command": "scrollerPower.smallUp",
-        "key": "ctrl+left",
+        "key": "ctrl+y",
         "when": "editorTextFocus"
       },
       {
         "command": "scrollerPower.mediumDown",
-        "key": "ctrl+down",
+        "key": "ctrl+d",
         "when": "editorTextFocus"
       },
       {
         "command": "scrollerPower.mediumUp",
-        "key": "ctrl+up",
+        "key": "ctrl+j",
         "when": "editorTextFocus"
       },
       {
@@ -94,6 +94,16 @@
           "minimum": 40,
           "maximum": 75,
           "description": "Lines to scroll (large amount)"
+        },
+        "scrollerPower.disableSmooth": {
+          "type": "boolean",
+          "default": false,
+          "description": "Disable smooth scrolling"
+        },
+        "scrollerPower.disableCentering": {
+          "type": "boolean",
+          "default": false,
+          "description": "Disable centering on cursor when scrolling"
         }
       }
     }
