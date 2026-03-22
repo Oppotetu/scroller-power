@@ -4,12 +4,64 @@ type Direction = "up" | "down";
 
 const linesPerTick = 1;
 
+/** Only the last N lines of a scroll use smooth one-line ticks; the rest jumps in one step. */
+const smoothTailLines = 8;
+
 const delaySmall = 1;
 const delayMedium = 1;
 const delayLarge = 1;
 
 function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Vim / VS Code often place the active end on the last space instead of EOL on blank-ish lines. */
+function lineMatchesVisualLineActive(
+  anchor: vscode.Position,
+  lineText: string,
+  activeCharacter: number,
+): boolean {
+  if (anchor.character !== 0) {
+    return false;
+  }
+  const len = lineText.length;
+  if (len === 0) {
+    return activeCharacter === 0;
+  }
+  if (activeCharacter === len) {
+    return true;
+  }
+  if (lineText.trim() === "" && len > 1 && activeCharacter === len - 1) {
+    return true;
+  }
+  return false;
+}
+
+function vimEmulationActive(): boolean {
+  return (
+    vscode.extensions.getExtension("vscodevim.vim")?.isActive === true ||
+    vscode.extensions.getExtension("asvetliakov.vscode-neovim")?.isActive ===
+      true
+  );
+}
+
+/** VSCodeVim may use a collapsed BOL selection on empty/whitespace-only lines until the first move. */
+function vimVisualLineCollapsedOnBlankLine(editor: vscode.TextEditor): boolean {
+  if (!vimEmulationActive()) {
+    return false;
+  }
+  const sel = editor.selection;
+  if (!sel.isEmpty) {
+    return false;
+  }
+  if (sel.anchor.line !== sel.active.line) {
+    return false;
+  }
+  if (sel.anchor.character !== 0 || sel.active.character !== 0) {
+    return false;
+  }
+  const lineText = editor.document.lineAt(sel.anchor.line).text;
+  return lineText.length === 0 || lineText.trim() === "";
 }
 
 export function activate(context: vscode.ExtensionContext) {
@@ -19,7 +71,6 @@ export function activate(context: vscode.ExtensionContext) {
   const linesToScrollMedium: number = config.get("linesToScrollMedium") || 25;
   const linesToScrollLarge: number = config.get("linesToScrollLarge") || 50;
   // const disableSmooth: boolean = config.get("disableSmooth") || false;
-  const disableCentering: boolean = config.get("disableCentering") || false;
 
   const smoothScroll = async (
     direction: Direction,
@@ -27,75 +78,101 @@ export function activate(context: vscode.ExtensionContext) {
     delayPerTick: number,
   ) => {
     const editor = vscode.window.activeTextEditor;
-    if (!editor) return;
+    if (!editor) {
+      return;
+    }
 
     const hasSelection = editor.selections.some(
       (selection) => !selection.isEmpty,
     );
 
+    const bulkLines = Math.max(0, lines - smoothTailLines);
+    const smoothLines = lines - bulkLines;
+
+    let selectionDocument: vscode.TextDocument | undefined;
+    let selectionAnchor: vscode.Position | undefined;
+    let isVisualLineMode = false;
+    let useSelectionPath = false;
+
     if (hasSelection) {
-      const document = editor.document;
-      const anchor = editor.selection.anchor;
+      selectionDocument = editor.document;
+      selectionAnchor = editor.selection.anchor;
+      const activeLineText = selectionDocument.lineAt(
+        editor.selection.active.line,
+      ).text;
+      isVisualLineMode = lineMatchesVisualLineActive(
+        selectionAnchor,
+        activeLineText,
+        editor.selection.active.character,
+      );
+      useSelectionPath = true;
+    } else if (vimVisualLineCollapsedOnBlankLine(editor)) {
+      selectionDocument = editor.document;
+      selectionAnchor = editor.selection.anchor;
+      isVisualLineMode = true;
+      useSelectionPath = true;
+    }
 
-      const activeLineText = document.lineAt(editor.selection.active.line).text;
-      const isVisualLineMode =
-        anchor.character === 0 &&
-        editor.selection.active.character === activeLineText.length;
+    const scrollLineChunk = async (lineCount: number, applyDelay: boolean) => {
+      if (lineCount <= 0) {
+        return;
+      }
 
-      for (let scrolled = 0; scrolled < lines; scrolled += linesPerTick) {
-        const selection = editor.selection;
-        const active = selection.active;
-
+      const moveSelectionByLines = (n: number) => {
+        if (n <= 0 || !selectionDocument || !selectionAnchor) {
+          return;
+        }
+        const document = selectionDocument;
+        const anchor = selectionAnchor;
+        const active = editor.selection.active;
         const newActiveLine =
-          direction === "down"
-            ? active.line + linesPerTick
-            : active.line - linesPerTick;
-
+          direction === "down" ? active.line + n : active.line - n;
         const clampedLine = Math.max(
           0,
           Math.min(newActiveLine, document.lineCount - 1),
         );
-
-        let newActive;
+        let newActive: vscode.Position;
         if (isVisualLineMode) {
-          // In visual line mode, move active to end of the line
           const lineLength = document.lineAt(clampedLine).text.length;
-          newActive = new vscode.Position(clampedLine, lineLength);
+          // Match Vim-style line-wise selection: the moving end at the top of the
+          // block is at column 0; at the bottom it is at EOL. Using EOL for both
+          // breaks upward extension (top line often shows only the last column).
+          newActive =
+            direction === "up"
+              ? new vscode.Position(clampedLine, 0)
+              : new vscode.Position(clampedLine, lineLength);
         } else {
-          // In normal visual mode, preserve character position
           newActive = new vscode.Position(clampedLine, active.character);
         }
-
         editor.selection = new vscode.Selection(anchor, newActive);
-        await vscode.commands.executeCommand("editorScroll", {
-          to: direction,
-          by: "line",
-          value: linesPerTick,
-          revealCursor: true,
-        });
-        await delay(delayPerTick);
-      }
-    } else {
-      for (let scrolled = 0; scrolled < lines; scrolled += linesPerTick) {
-        await vscode.commands.executeCommand("editorScroll", {
-          to: direction,
-          by: "line",
-          value: linesPerTick,
-          revealCursor: true,
-        });
+        // Reveal the active end only. Revealing the full selection often keeps the
+        // anchor in view and leaves the head off-screen when extending downward.
+        editor.revealRange(
+          new vscode.Range(newActive, newActive),
+          vscode.TextEditorRevealType.Default,
+        );
+      };
+
+      if (useSelectionPath && selectionDocument && selectionAnchor) {
+        moveSelectionByLines(lineCount);
+      } else {
         await vscode.commands.executeCommand("cursorMove", {
           to: direction,
           by: "line",
-          value: linesPerTick,
+          value: lineCount,
         });
+      }
+
+      if (applyDelay) {
         await delay(delayPerTick);
       }
-    }
+    };
 
-    if (!disableCentering) {
-      const cursorPosition = editor.selection.active;
-      const range = new vscode.Range(cursorPosition, cursorPosition);
-      editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
+    if (bulkLines > 0) {
+      await scrollLineChunk(bulkLines, false);
+    }
+    for (let scrolled = 0; scrolled < smoothLines; scrolled += linesPerTick) {
+      await scrollLineChunk(linesPerTick, true);
     }
   };
 
@@ -141,11 +218,6 @@ export function activate(context: vscode.ExtensionContext) {
   //     });
   //   }
 
-  //   if (!disableCentering) {
-  //     const cursorPosition = editor.selection.active;
-  //     const range = new vscode.Range(cursorPosition, cursorPosition);
-  //     editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
-  //   }
   // };
 
   const smallDown = vscode.commands.registerCommand(
